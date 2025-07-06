@@ -6,7 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: lvgr1947/frontend
+  IMAGE_NAME: lvgr1947/front-end
+  AWS_REGION: ap-south-1
 
 jobs:
   validate-yaml:
@@ -23,8 +24,7 @@ jobs:
           sudo mv kubeconform /usr/local/bin/
 
       - name: Validate all K8s YAMLs
-        run: |
-          kubeconform -strict -summary -output json -schema-location default -schema-location https://raw.githubusercontent.com/yannh/kubernetes-json-schema/master/ -ignore-missing-schemas -verbose k8s/
+        run: kubeconform -strict -summary -output json -ignore-missing-schemas -verbose k8s/
 
   build-and-push:
     name: Build & Push Docker Image
@@ -33,6 +33,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Docker Login
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
@@ -52,7 +59,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup kubeconfig
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set kubeconfig for staging
         run: echo "${{ secrets.KUBECONFIG_STAGING }}" > kubeconfig && chmod 600 kubeconfig
 
       - name: Deploy to staging namespace
@@ -65,12 +79,19 @@ jobs:
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: http://<your-ec2-ip>/production
+      url: https://venudev.duckdns.org/production
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup kubeconfig
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set kubeconfig for production
         run: echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig
 
       - name: Deploy to production namespace

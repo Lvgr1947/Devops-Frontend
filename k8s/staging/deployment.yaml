@@ -16,17 +16,6 @@ spec:
       containers:
         - name: frontend
           image: lvgr1947/front-end:latest
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 3
-            periodSeconds: 5

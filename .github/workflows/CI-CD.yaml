@@ -91,6 +91,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+
       - name: Set kubeconfig for production
         run: echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig
 

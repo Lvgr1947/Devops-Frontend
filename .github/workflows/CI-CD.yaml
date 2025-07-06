@@ -97,3 +97,5 @@ jobs:
 
       - name: Deploy to production namespace
         run: kubectl --kubeconfig=kubeconfig apply -f k8s/production/
+
+        

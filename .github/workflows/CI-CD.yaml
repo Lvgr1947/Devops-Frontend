@@ -94,7 +94,6 @@ jobs:
 
       - name: Set kubeconfig for production
         run: echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig
-
       - name: Deploy to production namespace
         run: kubectl --kubeconfig=kubeconfig apply -f k8s/production/
 

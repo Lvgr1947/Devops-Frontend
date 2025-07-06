@@ -5,7 +5,7 @@ metadata:
   namespace: staging
   annotations:
     kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   ingressClassName: nginx
   rules:
@@ -19,7 +19,3 @@ spec:
                 name: frontend-service
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - venudev.duckdns.org
-      secretName: venudev-staging-tls

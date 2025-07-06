@@ -4,13 +4,11 @@ metadata:
   name: frontend-ingress
   namespace: staging
   annotations:
-    kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
-  ingressClassName: nginx
+  ingressClassName: nginx  # ✅ This line tells it to use NGINX
   rules:
-    - host: venudev.duckdns.org
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix

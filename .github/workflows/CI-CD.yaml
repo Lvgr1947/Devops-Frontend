@@ -66,17 +66,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Set kubeconfig for staging
         run: echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig && chmod 600 kubeconfig
 
-      - name: Deploy to staging namespace
+      - name: Deploy to Staging Namespace
         run: kubectl --kubeconfig=kubeconfig apply -f k8s/staging/
 
   deploy-production:
@@ -91,23 +84,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Check for production changes
+      - name: Check if production folder changed
         id: check_prod_changes
         run: |
-          git fetch origin main
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^production/' || true)
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^k8s/production/' || true)
           echo "run_prod=${{ toJson(CHANGED != '') }}" >> $GITHUB_OUTPUT
 
       - name: Set kubeconfig for production
         run: echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > kubeconfig && chmod 600 kubeconfig
 
-      - name: Deploy to production namespace
+      - name: Deploy to Production Namespace
         if: steps.check_prod_changes.outputs.run_prod == 'true'
         run: kubectl --kubeconfig=kubeconfig --insecure-skip-tls-verify apply -f k8s/production/

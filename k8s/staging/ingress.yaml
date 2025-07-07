@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: 13.233.199.129.nip.io   # Replace with your public EC2 IP (use `.nip.io`)
+  - host: venudev.duckdns.org
     http:
       paths:
       - path: /

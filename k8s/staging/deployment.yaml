@@ -1,4 +1,3 @@
-# k8s/staging/frontend-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -15,19 +14,19 @@ spec:
         app: frontend
     spec:
       containers:
-        - name: frontend
-          image: lvgr1947/front-end:latest
-          ports:
-            - containerPort: 80
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 10
+      - name: frontend
+        image: lvgr1947/front-end:latest
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10

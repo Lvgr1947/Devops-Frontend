@@ -44,10 +44,22 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
+          
+      - name: Check if app folder changed
+        id: app_check
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^app/' || true)
+          if [ -n "$CHANGED" ]; then
+            echo "run_docker=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_docker=false" >> $GITHUB_OUTPUT
+          fi
+
 
       # Install Docker on EC2 instance
       - name: Install Docker if not present
-        if: steps.app_check.outputs.changed_files != ''
+        if: steps.app_check.outputs.run_docker == 'true'
         run: |
           if ! command -v docker &> /dev/null; then
             echo "Docker not found. Installing..."

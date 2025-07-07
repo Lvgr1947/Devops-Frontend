@@ -80,14 +80,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy via SSH into EC2
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            kubectl apply -f k8s/staging/
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Check for staging YAML changes
+        id: staging_check
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^staging/.*\.ya\?ml$' || true)
+          echo "run_staging=$([ -n "$CHANGED" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+      
+      - name: Set kubeconfig for staging
+        run: echo "${{ secrets.KUBECONFIG_STAGING }}" > kubeconfig && chmod 600 kubeconfig
+      - name: Deploy to staging namespace
+        if: steps.check_staging_changes.outputs.run_staging == 'true'
+        run: kubectl --kubeconfig=kubeconfig apply -f k8s/staging/
+      #- #name: Deploy via SSH into EC2
+        #uses: appleboy/ssh-action@v1.0.3
+       # with:
+        #  host: ${{ secrets.EC2_HOST }}
+         # username: ubuntu
+         # key: ${{ secrets.EC2_SSH_KEY }}
+          #script: |
+           # kubectl apply -f k8s/staging/
 
   deploy-production:
     name: Deploy to Production

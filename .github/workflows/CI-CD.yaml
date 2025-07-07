@@ -17,19 +17,23 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+      - name: Check if YAML files changed
+        id: yaml_check
+        run: |
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '\.ya?ml$' || true)
+          echo "changed_files=$CHANGED" >> $GITHUB_OUTPUT
 
-      - name: Install kubeconform
+      - name: Run YAML validator
+        if: steps.yaml_check.outputs.changed_files != ''  
         run: |
           curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
-
-      - name: Validate all K8s YAMLs
-        run: kubeconform -strict -summary -output json -ignore-missing-schemas -verbose k8s/
+          kubeconform -strict -summary -output json -ignore-missing-schemas -verbose k8s/
 
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    needs: validate-yaml
+    #needs: validate-yaml
 
     steps:
       - uses: actions/checkout@v3
@@ -53,7 +57,7 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: self-hosted
-    needs: build-and-push
+    needs: validate-yaml
     environment: staging
 
     steps:

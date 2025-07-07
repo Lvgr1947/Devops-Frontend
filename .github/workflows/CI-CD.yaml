@@ -130,6 +130,7 @@ jobs:
             echo "Production changes detected."
             echo "run_prod=true" >> $GITHUB_OUTPUT
           fi
+          
 
       - name: Set kubeconfig for production
         run: echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig

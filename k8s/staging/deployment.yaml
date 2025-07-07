@@ -1,13 +1,9 @@
----
+# k8s/staging/frontend-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
   namespace: staging
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "80"
-
 spec:
   replicas: 1
   selector:
@@ -21,7 +17,17 @@ spec:
       containers:
         - name: frontend
           image: lvgr1947/front-end:latest
-          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
-
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -57,7 +57,7 @@ jobs:
   deploy-staging:
     name: Deploy to Staging
     runs-on: self-hosted
-    needs: validate-yaml
+    needs: ["validate-yaml","build-and-push"]
     environment: staging
 
     steps:
@@ -76,7 +76,7 @@ jobs:
   deploy-production:
     name: Deploy to Production
     runs-on: self-hosted
-    needs: build-and-push
+    needs: ["validate-yaml","build-and-push"]
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
@@ -92,10 +92,24 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+          
+      - name: Check if production/ folder changed
+        id: check_prod_changes
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^production/' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No production changes found. Skipping deployment."
+            echo "run_prod=false" >> $GITHUB_OUTPUT
+          else
+            echo "Production changes detected."
+            echo "run_prod=true" >> $GITHUB_OUTPUT
+          fi
 
       - name: Set kubeconfig for production
         run: echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig
       - name: Deploy to production namespace
+        if: steps.check_prod_changes.outputs.run_prod == 'true'
         run: kubectl --kubeconfig=kubeconfig apply -f k8s/production/
 
         

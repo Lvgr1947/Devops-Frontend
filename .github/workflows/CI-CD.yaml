@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+
 env:
   IMAGE_NAME: lvgr1947/front-end
   AWS_REGION: ap-south-1

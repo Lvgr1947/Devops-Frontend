@@ -65,7 +65,9 @@ jobs:
             echo "Docker not found. Installing..."
             sudo apt update
             sudo apt install -y docker.io
+            sudo usermod -aG docker $USER
             sudo systemctl start docker
+            newgrp docker
           else
             echo "Docker already installed."
           fi

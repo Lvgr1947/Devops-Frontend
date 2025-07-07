@@ -106,7 +106,7 @@ jobs:
   
       - name: Deploy to staging namespace
         if: steps.staging_check.outputs.run_staging == 'true'
-        run: kubectl --kubeconfig=kubeconfig apply -f k8s/staging/
+        run: kubectl --kubeconfig=kubeconfig --insecure-skip-tls-verify apply -f k8s/staging/
       #- #name: Deploy via SSH into EC2
         #uses: appleboy/ssh-action@v1.0.3
        # with:
@@ -154,7 +154,7 @@ jobs:
         run: echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig
       - name: Deploy to production namespace
         if: steps.check_prod_changes.outputs.run_prod == 'true'
-        run: kubectl --kubeconfig=kubeconfig apply -f k8s/production/
+        run: kubectl --kubeconfig=kubeconfig --insecure-skip-tls-verify apply -f k8s/production/
 
         
 

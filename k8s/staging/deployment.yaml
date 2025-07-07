@@ -3,6 +3,10 @@ kind: Deployment
 metadata:
   name: frontend
   namespace: staging
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "80"
+
 spec:
   replicas: 1
   selector:

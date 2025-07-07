@@ -5,3 +5,4 @@ metadata:
   name: staging
   labels:
     app: frontend
+---

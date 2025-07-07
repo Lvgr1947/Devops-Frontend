@@ -3,8 +3,6 @@ name: CI/CD Frontend
 on:
   push:
     branches: [ main ]
-    paths-ignore:
-      - '.github/workflows/**'
   workflow_dispatch:
 
 env:
@@ -20,18 +18,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Check for changed YAML files
-        id: yaml_check
-        run: |
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '\.ya?ml$' || true)
-          echo "changed_files=$CHANGED" >> $GITHUB_OUTPUT
-
-      - name: Run YAML Validator
-        if: steps.yaml_check.outputs.changed_files != ''
+      - name: Install kubeconform
         run: |
           curl -L https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz | tar xz
           sudo mv kubeconform /usr/local/bin/
-          kubeconform -strict -summary -output json -ignore-missing-schemas -verbose k8s/
+
+      - name: Validate all K8s YAMLs
+        run: kubeconform -strict -summary -output json -ignore-missing-schemas -verbose k8s/
 
   build-and-push:
     name: Build & Push Docker Image
@@ -64,35 +57,37 @@ jobs:
     environment: staging
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Set kubeconfig for staging
-        run: echo "${{ secrets.KUBECONFIG_STAGING }}" | base64 -d > kubeconfig && chmod 600 kubeconfig
-
-      - name: Deploy to Staging Namespace
-        run: kubectl --kubeconfig=kubeconfig apply -f k8s/staging/
+      - name: Deploy to Staging via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            kubectl apply -f k8s/staging/
 
   deploy-production:
     name: Deploy to Production
     runs-on: self-hosted
-    needs: ["validate-yaml", "build-and-push"]
+    needs: build-and-push
     if: github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://venudev.duckdns.org/production
+     # url: https://venudev.duckdns.org/production
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Check if production folder changed
-        id: check_prod_changes
-        run: |
-          CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^k8s/production/' || true)
-          echo "run_prod=${{ toJson(CHANGED != '') }}" >> $GITHUB_OUTPUT
-
-      - name: Set kubeconfig for production
-        run: echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > kubeconfig && chmod 600 kubeconfig
-
-      - name: Deploy to Production Namespace
-        if: steps.check_prod_changes.outputs.run_prod == 'true'
-        run: kubectl --kubeconfig=kubeconfig --insecure-skip-tls-verify apply -f k8s/production/
+      - name: Deploy to Production via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "${{ secrets.KUBECONFIG_PROD }}" > kubeconfig && chmod 600 kubeconfig
+            kubectl --kubeconfig=kubeconfig apply -f k8s/production/

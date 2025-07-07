@@ -93,13 +93,18 @@ jobs:
         id: staging_check
         run: |
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '^staging/.*\.ya\?ml$' || true)
-          echo "run_staging=$([ -n "$CHANGED" ] && echo true || echo false)" >> $GITHUB_OUTPUT
-        
+          if [ -n "$CHANGED" ]; then
+            echo "run_staging=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_staging=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Set kubeconfig for staging
         run: echo "${{ secrets.KUBECONFIG_STAGING }}" > kubeconfig && chmod 600 kubeconfig
+  
       - name: Deploy to staging namespace
         if: steps.staging_check.outputs.run_staging == 'true'
-        run: kubectl --kubeconfig=kubeconfig apply -f k8s/staging/
+        run: kubectl --kubeconfig=kubeconfig apply -f staging/
       #- #name: Deploy via SSH into EC2
         #uses: appleboy/ssh-action@v1.0.3
        # with:
